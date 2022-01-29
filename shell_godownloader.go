@@ -29,7 +29,14 @@ func processGodownloader(repo, path, filename string) ([]byte, error) {
 		return nil, fmt.Errorf("unable generate checksum name: %s", err)
 	}
 
-	return makeShell(shellGodownloader, cfg)
+	downloader := ""
+	if cfg.Archive.Format == "binary" {
+		downloader = shellRaw
+	} else {
+		downloader = shellGodownloader
+	}
+
+	return makeShell(downloader, cfg)
 }
 
 // nolint: lll

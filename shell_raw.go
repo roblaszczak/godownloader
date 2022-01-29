@@ -97,6 +97,28 @@ adjust_binary() {
     BINARY="${BINARY}.exe"
   fi
 }
+adjust_os() {
+  # adjust archive name based on OS
+  {{- with .Archive.Replacements }}
+  case ${OS} in
+  {{- range $k, $v := . }}
+    {{ $k }}) OS={{ $v }} ;;
+  {{- end }}
+  esac
+  {{- end }}
+  true
+}
+adjust_arch() {
+  # adjust archive name based on ARCH
+  {{- with .Archive.Replacements }}
+  case ${ARCH} in
+  {{- range $k, $v := . }}
+    {{ $k }}) ARCH={{ $v }} ;;
+  {{- end }}
+  esac
+  {{- end }}
+  true
+}
 # wrap all destructive operations into a function
 # to prevent curl|bash network truncation and disaster
 execute() {
@@ -110,7 +132,8 @@ execute() {
 ` + shellfn + `
 OWNER={{ .Release.GitHub.Owner }}
 REPO="{{ .Release.GitHub.Name }}"
-BINARY={{ (index .Builds 0).Binary }}
+BINARY="{{ $.ProjectName }}"
+FORMAT={{ .Archive.Format }}
 BINDIR=${BINDIR:-./bin}
 PREFIX="$OWNER/$REPO"
 # use in logging routines
@@ -132,6 +155,10 @@ parse_args "$@"
 tag_to_version
 
 log_info "found version ${VERSION} for ${TAG}/${OS}/${ARCH}"
+
+adjust_os
+
+adjust_arch
 
 {{ .Archive.NameTemplate }}
 
