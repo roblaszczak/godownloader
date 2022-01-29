@@ -29,7 +29,7 @@ var (
 )
 
 // given a template, and a config, generate shell script.
-func makeShell(tplsrc string, cfg *config.Project) ([]byte, error) {
+func makeShell(tplsrc string, cfg *ProjectWrapper) ([]byte, error) {
 	// if we want to add a timestamp in the templates this
 	//  function will generate it
 	funcMap := template.FuncMap{
@@ -67,7 +67,7 @@ func makePlatform(goos, goarch, goarm string) string {
 
 // makePlatformBinaries returns a map from platforms to a slice of binaries
 // built for that platform.
-func makePlatformBinaries(cfg *config.Project) map[string][]string {
+func makePlatformBinaries(cfg *ProjectWrapper) map[string][]string {
 	platformBinaries := make(map[string][]string)
 	for _, build := range cfg.Builds {
 		ignore := make(map[string]bool)
@@ -160,7 +160,7 @@ func normalizeRepo(repo string) string {
 	return repo
 }
 
-func loadURLs(path, configPath string) (*config.Project, error) {
+func loadURLs(path, configPath string) (*ProjectWrapper, error) {
 	for _, file := range []string{configPath, "goreleaser.yml", ".goreleaser.yml", "goreleaser.yaml", ".goreleaser.yaml"} {
 		if file == "" {
 			continue
@@ -178,7 +178,7 @@ func loadURLs(path, configPath string) (*config.Project, error) {
 	return nil, fmt.Errorf("could not fetch a goreleaser configuration file")
 }
 
-func loadURL(file string) (*config.Project, error) {
+func loadURL(file string) (*ProjectWrapper, error) {
 	// nolint: gosec
 	resp, err := http.Get(file)
 	if err != nil {
@@ -195,16 +195,16 @@ func loadURL(file string) (*config.Project, error) {
 	if errc != nil {
 		return nil, errc
 	}
-	return &p, err
+	return &ProjectWrapper{Project: p}, err
 }
 
-func loadFile(file string) (*config.Project, error) {
+func loadFile(file string) (*ProjectWrapper, error) {
 	p, err := config.Load(file)
-	return &p, err
+	return &ProjectWrapper{Project: p}, err
 }
 
 // Load project configuration from a given repo name or filepath/url.
-func Load(repo, configPath, file string) (project *config.Project, err error) {
+func Load(repo, configPath, file string) (project *ProjectWrapper, err error) {
 	if repo == "" && file == "" {
 		return nil, fmt.Errorf("repo or file not specified")
 	}
@@ -237,14 +237,14 @@ func Load(repo, configPath, file string) (project *config.Project, err error) {
 		project.Dockers[i].Files = []string{}
 	}
 
-	var ctx = context.New(*project)
+	var ctx = context.New(project.Project)
 	for _, defaulter := range defaults.Defaulters {
 		log.Infof("setting defaults for %s", defaulter)
 		if err := defaulter.Default(ctx); err != nil {
 			return nil, errors.Wrap(err, "failed to set defaults")
 		}
 	}
-	project = &ctx.Config
+	project.Project = ctx.Config
 
 	// set default binary name
 	if len(project.Builds) == 0 {
@@ -317,4 +317,10 @@ func main() {
 	// output is effectively the same as new content
 	// (comments and most whitespace doesn't matter)
 	// nothing to do
+}
+
+// quick fix for backward compability
+type ProjectWrapper struct {
+	config.Project
+	Archive config.Archive
 }
