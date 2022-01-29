@@ -118,11 +118,11 @@ func makeName(prefix, target string) (string, error) {
 
 	// otherwise if it contains a conditional, we can't (easily)
 	// translate that to bash.  Ask for bug report.
-	if strings.Contains(target, "{{ if") ||
-		strings.Contains(target, "{{if") {
-		//nolint: lll
-		return "", fmt.Errorf("name_template %q contains unknown conditional or ARM format. Please file bug at https://github.com/goreleaser/godownloader", target)
-	}
+	//if strings.Contains(target, "{{ if") ||
+	//	strings.Contains(target, "{{if") {
+	//	//nolint: lll
+	//	return "", fmt.Errorf("name_template %q contains unknown conditional or ARM format. Please file bug at https://github.com/goreleaser/godownloader", target)
+	//}
 
 	varmap := map[string]string{
 		"Os":          "${OS}",
